@@ -1,13 +1,14 @@
 // Tetris
 var level = 1
 var lines = 0
-var speed = 100
+var speed = 200
 var height = 20
 var width = 10
 var field
 var tetromino
 var nextTetromino
 var play = true
+var busy = false
 
 var iShape = [
   [-2, 0],
@@ -68,6 +69,7 @@ function Tetromino() {
   }
   this.draw = function(style) {
     let lines = []
+    let fullLines = []
     for (block in this.shape) {
       let x = this.position[0] + this.shape[block][0]
       let y = this.position[1] + this.shape[block][1]
@@ -75,11 +77,12 @@ function Tetromino() {
       let cell = document.getElementById(x + ' ' + y)
       cell.classList.add(style)
     }
-    if (style = 'solid') {
-      lines = [...new Set(lines)]
+    if (style == 'solid') {
+      lines = [...new Set(lines)] //filter so only unique lines remain
       for (line in lines) {
-        if (isFull(lines[line])) console.log('Line ' + lines[line] + ' is full')
+        if (isFull(lines[line])) fullLines.push(lines[line])
       }
+      if (fullLines.length > 0) scoreLine(fullLines)
     }
   }
   this.remove = function() {
@@ -113,9 +116,6 @@ function Tetromino() {
       if ($(".tetromino").length > 0) {
         this.remove()
         this.draw('solid')
-        if (isFull(this.position[1])) {
-          //remove(this.position[1])
-        }
       }
       tetromino = new Tetromino()
     }
@@ -136,6 +136,44 @@ function isFull(line) {
   return true
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function scoreLine(lineNumbers) {
+  busy = true
+  let lineQuery = ''
+    // construct a selector for all full lines, e.g. ".1, .2, .3"
+  for (let n = 0; n < lineNumbers.length; n++) {
+    if (n > 0) lineQuery += ', '
+    lineQuery += '.' + lineNumbers[n]
+  }
+  $(lineQuery).toggleClass('solid')
+  $(lineQuery).toggleClass('selected')
+  
+  let myTimer = window.setTimeout(function() {dropLinesAbove(lineNumbers, lineQuery)}, 200)
+  //clearTimeout(myTimer)
+}
+
+function dropLinesAbove(lineNumbers, lineQuery) {
+  for (let above = Math.min(...lineNumbers) + 1; above < height; above++) {
+    let nLines = 0
+    for (let full = 0; full < lineNumbers.length; full++) {
+      if (lineNumbers[full] < above) nLines++
+    }
+    for (let x = 1; x <= width; x++) {
+      let cell = document.getElementById(x + ' ' + above)
+      if (cell.classList.contains('solid')) {
+        cell.classList.remove('solid')
+        let goalCell = document.getElementById(x + ' ' + (above - nLines))
+        goalCell.classList.add('solid')
+      }
+    }
+  }
+  $(lineQuery).toggleClass('selected')
+  busy = false
+}
+
 function initField() {
   let table = document.getElementById('field')
   for (let y = height; y > 0; y--) {
@@ -143,12 +181,13 @@ function initField() {
     for (let x = 1; x <= width; x++) {
       let cell = row.insertCell()
       cell.id = x + ' ' + y;
+      cell.classList.add(y)
     }
   }
 }
 
 function move() {
-  tetromino.move([0, -1])
+  if (!busy) tetromino.move([0, -1])
   if (play) setTimeout(move, speed)
 }
 
