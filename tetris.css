@@ -1,0 +1,9 @@
+td {
+  width: 20px;
+  height: 20px;
+  background-color: dimgrey;
+}
+
+.tetromino, .solid {
+  background-color: chartreuse;
+}
