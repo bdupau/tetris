@@ -1,64 +1,19 @@
 // Tetris
-var level = 1
 var lines = 0
-var speed = 200
+var score = 0
 var height = 20
 var width = 10
-var field
 var tetromino
 var nextTetromino
 var play = true
 var busy = false
-
-var iShape = [
-  [-2, 0],
-  [-1, 0],
-  [0, 0],
-  [1, 0]
-]
-var oShape = [
-  [-1, -1],
-  [-1, 0],
-  [0, -1],
-  [0, 0]
-]
-var tShape = [
-  [-1, 0],
-  [0, 0],
-  [1, 0],
-  [0, -1]
-]
-var jShape = [
-  [-1, 0],
-  [0, 0],
-  [1, 0],
-  [1, -1]
-]
-var lShape = [
-  [-1, 0],
-  [0, 0],
-  [1, 0],
-  [-1, -1]
-]
-var sShape = [
-  [1, 0],
-  [0, 0],
-  [0, -1],
-  [-1, -1]
-]
-var zShape = [
-  [-1, 0],
-  [0, 0],
-  [0, -1],
-  [1, -1]
-]
-var tetrominoShapes = [iShape, oShape, tShape, jShape, lShape, sShape, zShape]
 
 function Tetromino() {
   this.done = false
   this.shape = jQuery.extend(true, {}, tetrominoShapes[Math.floor(Math.random() * tetrominoShapes.length)]);
 
   this.position = [6, 21]
+  this.drops = 0
 
   this.rotate = function() {
     for (block in this.shape) {
@@ -78,6 +33,7 @@ function Tetromino() {
       cell.classList.add(style)
     }
     if (style == 'solid') {
+		// het is gek dat hier gescoord wordt
       lines = [...new Set(lines)] //filter so only unique lines remain
       for (line in lines) {
         if (isFull(lines[line])) fullLines.push(lines[line])
@@ -112,8 +68,10 @@ function Tetromino() {
       this.position[0] += direction[0]
       this.position[1] += direction[1]
       this.draw('tetromino')
+	  return true
     } else if (this.done) {
       if ($(".tetromino").length > 0) {
+		score += this.drops
         this.remove()
         this.draw('solid')
       }
@@ -136,10 +94,6 @@ function isFull(line) {
   return true
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function scoreLine(lineNumbers) {
   busy = true
   let lineQuery = ''
@@ -153,6 +107,21 @@ function scoreLine(lineNumbers) {
   
   let myTimer = window.setTimeout(function() {dropLinesAbove(lineNumbers, lineQuery)}, 200)
   //clearTimeout(myTimer)
+  
+  switch (lineNumbers.length) {
+    case 4:
+	  score += 900 * (level + 1)
+	  lines++
+	case 3:
+	  score += 200 * (level + 1)
+	  lines++
+	case 2:
+	  score += 60 * (level + 1)
+	  lines++
+	case 1:
+	  score += 40 * (level + 1)
+	  lines++
+  }
 }
 
 function dropLinesAbove(lineNumbers, lineQuery) {
@@ -174,38 +143,65 @@ function dropLinesAbove(lineNumbers, lineQuery) {
   busy = false
 }
 
-function initField() {
-  let table = document.getElementById('field')
+function updateScoresheet() {
+	var scoreSheet = document.getElementById('score')
+	var scoreText = ''
+	scoreText += "<br>LEVEL:<br>"
+	scoreText += getLevel()
+	scoreText += "<br>SCORE:<BR>"
+	scoreText += score
+	scoreSheet.innerHTML = scoreText
+}
+
+function init() {
+  let playfield = document.getElementById('field')
+  let tbl = document.createElement('table')
+  playfield.appendChild(tbl)
   for (let y = height; y > 0; y--) {
-    let row = table.insertRow()
+    let row = tbl.insertRow()
     for (let x = 1; x <= width; x++) {
       let cell = row.insertCell()
-      cell.id = x + ' ' + y;
+      cell.id = x + ' ' + y
       cell.classList.add(y)
+    }
+  }
+  
+  let nextArea = document.getElementById('next')
+  let nextTbl = document.createElement('table')
+  nextArea.appendChild(nextTbl)
+  for (let y = 0; y < 4; y++) {
+    let row = nextTbl.insertRow()
+    for (let x = 0; x < 4; x++) {
+      let cell = row.insertCell()
+      cell.id = 'next ' + x + ' ' + y
     }
   }
 }
 
+function getLevel() {
+	return Math.floor(lines / 10)
+}
+
+function getSpeed() {
+	return 1000 * 1.2 ** (-getLevel())
+}
+
 function move() {
-  if (!busy) tetromino.move([0, -1])
-  if (play) setTimeout(move, speed)
+  if (play && !busy) tetromino.move([0, -1])
+  if (play) setTimeout(move, getSpeed())
+  updateScoresheet()
 }
 
 function playOn() {
-  console.log('h')
   play = true
-  setTimeout(move, speed)
+  setTimeout(move, getSpeed())
 }
 
 function stop() {
   play = false
 }
 
-function rotateTetromino() {
-  tetromino.rotate()
-}
-
-function handleEvent(event) {
+function handleKeyDown(event) {
   switch (event.keyCode) {
     case 37: //left
       tetromino.move([-1, 0])
@@ -217,13 +213,19 @@ function handleEvent(event) {
       tetromino.move([1, 0])
       break
     case 40: //down
-      tetromino.move([0, -1])
+      if (tetromino.move([0, -1])) tetromino.drops++
       break
   }
 }
 
-//document.addEventListener("keyup", handleEvent(event))
+function handleKeyUp(event) {
+  switch (event.keyCode) {
+    case 40: //down
+      if (tetromino.move([0, -1])) tetromino.drops = 0
+      break
+  }
+}
 
-initField()
+init()
 tetromino = new Tetromino()
-setTimeout(move, speed)
+setTimeout(move, getSpeed())

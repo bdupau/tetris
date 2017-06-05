@@ -11,3 +11,20 @@ td {
 .selected {
   background-color: tomato;
 }
+
+#main {
+  width: 500px;
+  background-color: ivory;
+}
+
+#field {
+  margin-left: 120px;
+}
+
+#side {
+  float: left;
+  width: 100px;
+  font-family: "Lucida console";
+  font-weight: bold;
+  text-align: center;
+}

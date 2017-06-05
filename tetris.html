@@ -3,13 +3,18 @@
 		<meta charset="utf-8"/>
 		<link rel="stylesheet" type="text/css" href="tetris.css">
 	</head>
-	<body onkeydown="handleEvent(event)">
-		<table id="field"/>
-		<div id="score"/>
-		<div id="next"/>
+	<body onkeydown="handleKeyDown(event)" onkeyup="handleKeyUp(event)">
+		<div id="main">
+			<div id="side">
+				<div id="next"></div>
+				<div id="score"></div>
+			</div>
+			<div id="field"></div>
+		</div>
 		<button id="stop" onclick="stop()">STOP</button>
 		<button id="play" onclick="playOn()">PLAY</button>
 		<script src="jquery.min.js"></script>
+		<script src="tetrominoShapes.js"></script>
 		<script src="tetris.js"></script>
 	</body>
 </html>
