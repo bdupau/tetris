@@ -41,3 +41,7 @@ var zShape = [
   [1, -1]
 ]
 var tetrominoShapes = [iShape, oShape, tShape, jShape, lShape, sShape, zShape]
+
+function getRandomTetrominoShape() {
+	return jQuery.extend(true, {}, tetrominoShapes[Math.floor(Math.random() * tetrominoShapes.length)]);
+}

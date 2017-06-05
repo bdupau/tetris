@@ -4,7 +4,7 @@ td {
   background-color: dimgrey;
 }
 
-.tetromino, .solid {
+.tetromino, .solid, .next {
   background-color: chartreuse;
 }
 
