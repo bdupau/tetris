@@ -1,13 +1,13 @@
 // Tetris
-var lines = 0;
-var score = 0;
 var height = 20;
 var width = 10;
+var lines;
+var score;
 var tetromino;
 var nextTetromino;
-var play = true;
-var busy = false;
-var gameOver = false;
+var play;
+var busy;
+var gameOver;
 
 function Tetromino(shape) {
 	this.shape = shape;
@@ -25,6 +25,8 @@ function Tetromino(shape) {
 		}
 	}
 	this.remove = function() {
+		// Verwijdert niet alleen zichzelf, maar alle tetromino cellen
+		// Onder de aanname dat er altijd maar één tetromino is
 		$(".tetromino").removeClass("tetromino");
 	}
 	this.movable = function(direction) {
@@ -49,6 +51,8 @@ function Tetromino(shape) {
 		return true
 	}
 	this.move = function(direction) {
+		if (!play)
+			return;
 		if (this.movable(direction)) {
 			this.remove();
 			this.position[0] += direction[0];
@@ -66,9 +70,9 @@ function Tetromino(shape) {
 	}
 	this.rotatable = function() {
 		for (block in this.shape) {
-			let y_backup = this.shape[block][1]; //-1 = -1
-			let y = -this.shape[block][0]; //1 = -(-1)
-			let x = y_backup;              //-1 = -1
+			let y_backup = this.shape[block][1];
+			let y = -this.shape[block][0];
+			let x = y_backup;
 			x += this.position[0];
 			y += this.position[1];
 			if (x <= 0 || x > width)
@@ -82,15 +86,15 @@ function Tetromino(shape) {
 		return true;
 	}
 	this.rotate = function() {
-		if (this.rotatable()) {
-			this.remove();
-			for (block in this.shape) {
-				let y_backup = this.shape[block][1];
-				this.shape[block][1] = -this.shape[block][0];
-				this.shape[block][0] = y_backup;
-			}
-			this.draw('tetromino');
+		if (!play || !this.rotatable())
+			return;
+		this.remove();
+		for (block in this.shape) {
+			let y_backup = this.shape[block][1];
+			this.shape[block][1] = -this.shape[block][0];
+			this.shape[block][0] = y_backup;
 		}
+		this.draw('tetromino');
 	}
 	this.start = function() {
 		if (this.movable([0, -1])) {
@@ -98,12 +102,36 @@ function Tetromino(shape) {
 			this.position[1]--;
 			this.draw('tetromino');
 		} else {
-			$(".solid").addClass('selected');
-			gameOver = true;
-			stop();
+			endGame();
 		}
 	}
 	return this;
+}
+
+function endGame() {
+	stop();
+	gameOver = true;
+	$(".solid").addClass('selected');
+	setHighscore();
+	if (confirm("Start new game ?"))
+		startNewGame();
+}
+
+function startNewGame() {
+	$(".tetromino").removeClass("tetromino");
+	$(".solid").removeClass("solid");
+	$(".next").removeClass("next");
+	$(".selected").removeClass("selected");
+	
+	lines = 0;
+	score = 0;
+	play = true;
+	busy = false;
+	gameOver = false;
+	
+	nextTetromino = getRandomTetrominoShape();
+	placeNextTetrominoInField();
+	updateScoresheet();
 }
 
 function isFull(line) {
@@ -134,6 +162,7 @@ function scoreLines(lineNumbers) {
 	case 4:
 		score += 900 * (getLevel() + 1);
 		lines++;
+		$("#wellDone").show().delay(5000).fadeOut();
 	case 3:
 		score += 200 * (getLevel() + 1);
 		lines++;
@@ -143,7 +172,6 @@ function scoreLines(lineNumbers) {
 	case 1:
 		score += 40 * (getLevel() + 1);
 		lines++;
-		$("#wellDone").show().delay(5000).fadeOut();
 	}
 }
 
@@ -175,6 +203,8 @@ function updateScoresheet() {
 	scoreText += getLevel();
 	scoreText += "<br><br>SCORE:<BR>";
 	scoreText += score;
+	scoreText += "<br><br>HISCORE:<BR>";
+	scoreText += getHighscore();
 	scoreSheet.innerHTML = scoreText;
 }
 
@@ -216,6 +246,21 @@ function init() {
 	$("#wellDone").hide();
 }
 
+function getHighscore() {
+	if (typeof(Storage) !== "undefined") {
+		if (localStorage.highscore)
+			return localStorage.highscore;
+	}
+	return 0;
+}
+
+function setHighscore() {
+	if (typeof(Storage) !== "undefined") {
+		if (!localStorage.highscore || score > localStorage.highscore)
+			localStorage.highscore = score;
+	}
+}
+
 function getLevel() {
 	return Math.floor(lines / 10);
 }
@@ -246,9 +291,10 @@ function move() {
 			break;
 		}
 	}
-	if (play)
+	if (play) {
+		updateScoresheet();
 		setTimeout(move, getSpeed());
-	updateScoresheet();
+	}
 }
 
 function playOn() {
@@ -316,7 +362,5 @@ function placeNextTetrominoInField() {
 }
 
 init();
-nextTetromino = getRandomTetrominoShape();
-placeNextTetrominoInField()
-updateScoresheet()
+startNewGame();
 setTimeout(move, getSpeed());
